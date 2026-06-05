@@ -670,10 +670,9 @@ async function loadModels() {
 let currentStream = null;
 
 async function startCamera() {
-  // Fade out splash, then remove it
   const splash = document.getElementById('splash');
-  splash.classList.add('fade-out');
-  setTimeout(() => { splash.style.display = 'none'; }, 400);
+
+  // Show camera underneath splash while it warms up
   document.getElementById('camera-wrap').style.display = 'block';
   document.getElementById('header').style.display = 'flex';
 
@@ -685,7 +684,22 @@ async function startCamera() {
   domStatusText = document.getElementById('status-text');
   domNoFace     = document.getElementById('no-face');
 
+  // Update splash status to show camera is initializing
+  const splashStatus = document.getElementById('splash-status');
+  const splashReady  = document.getElementById('splash-ready');
+  const splashLoading = document.getElementById('splash-loading');
+  splashLoading.style.display = 'flex';
+  splashReady.style.display   = 'none';
+  splashStatus.textContent    = 'Initializing camera…';
+
   await initStream(false);
+
+  // Wait for camera hardware to settle (autofocus / exposure on first cold start)
+  await new Promise(r => setTimeout(r, 2000));
+
+  // Now fade splash — camera is stable underneath
+  splash.classList.add('fade-out');
+  setTimeout(() => { splash.style.display = 'none'; }, 400);
 
   canvasEl.width  = window.innerWidth;
   canvasEl.height = window.innerHeight;
@@ -769,6 +783,8 @@ async function initStream(useFront) {
   videoEl.style.transformOrigin = 'center center';
   await new Promise(r => videoEl.onloadedmetadata = r);
   await new Promise(r => videoEl.onloadeddata = r);
+  // Brief pause so camera sensor can settle before we expose the stream
+  await new Promise(r => setTimeout(r, 500));
   const track = stream.getVideoTracks()[0];
   if (track) initZoom(track);
 }
