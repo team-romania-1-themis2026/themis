@@ -74,30 +74,61 @@
   #video { width:100%; height:100%; object-fit:cover; }
   #overlay { position:absolute; inset:0; pointer-events:auto; }
 
-  #loading {
-    position:fixed; inset:0; background: var(--bg);
+  /* SPLASH — covers everything at z:9999 so zoom is hidden underneath */
+  #splash {
+    position:fixed; inset:0; z-index:9999;
+    background: var(--bg);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:22px; z-index:300;
+    gap:24px; padding:36px;
+    transition: opacity 0.4s ease;
   }
-  #loading-logo {
-    font-family:'Nunito',sans-serif; font-weight:900; font-size:28px;
+  #splash.fade-out { opacity:0; pointer-events:none; }
+  #splash-logo {
+    font-family:'Nunito',sans-serif; font-weight:900; font-size:32px;
     background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f59e0b 100%);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     letter-spacing:1px;
   }
-  #loading-sub {
-    font-size:12px; color:var(--muted); letter-spacing:0.5px;
-    text-align:center; max-width:220px; line-height:1.6;
+  /* spinner ring */
+  #splash-spinner {
+    width:48px; height:48px;
+    border:3px solid rgba(168,85,247,0.2);
+    border-top-color:#a855f7;
+    border-radius:50%;
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #splash-status {
+    font-size:12px; color:var(--muted); letter-spacing:0.4px;
+    text-align:center;
   }
   #bar-wrap { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; }
-  #bar { height:100%; width:0; border-radius:4px; background:linear-gradient(90deg,#7c3aed,#ec4899); transition:width 0.4s; }
-  #load-txt { font-size:11px; color:var(--muted); letter-spacing:0.3px; }
-
-  #start-screen {
-    display:none; position:fixed; inset:0; z-index:200;
-    flex-direction:column; align-items:center; justify-content:center;
-    background: var(--bg); gap:28px; padding:36px;
+  #bar { height:100%; width:0; border-radius:4px; background:linear-gradient(90deg,#7c3aed,#ec4899); transition:width 0.6s ease; }
+  /* ready state inside splash */
+  #splash-ready {
+    display:none; flex-direction:column; align-items:center; gap:28px;
+    text-align:center;
   }
+  #splash-ready .hero-icon {
+    width:96px; height:96px; border-radius:28px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.3));
+    border: 1px solid rgba(168,85,247,0.4);
+    display:flex; align-items:center; justify-content:center;
+  }
+  #splash-ready h1 {
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:22px;
+    line-height:1.3; color:var(--text); max-width:280px;
+  }
+  #splash-ready .subtitle {
+    font-size:13px; color:var(--muted); line-height:1.6; max-width:280px;
+  }
+  /* loading state inside splash */
+  #splash-loading {
+    display:flex; flex-direction:column; align-items:center; gap:20px;
+  }
+
+
+  #start-screen { display:none; }  /* kept for compat, not used */
   .hero-icon {
     width:96px; height:96px; border-radius:28px;
     background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.3));
@@ -306,32 +337,34 @@
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="loading">
-  <div id="loading-logo">FaceLink</div>
-  <div id="loading-sub">Discover what your face reveals about your digital presence</div>
-  <div id="bar-wrap"><div id="bar"></div></div>
-  <p id="load-txt">Loading AI model…</p>
-</div>
-
-<!-- START SCREEN -->
-<div id="start-screen">
-  <div class="hero-icon">
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="19" r="9" stroke="url(#g1)" stroke-width="2.5"/>
-      <path d="M9 40c0-8.3 6.7-15 15-15s15 6.7 15 15" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="24" cy="19" r="3.5" fill="url(#g1)" opacity="0.7"/>
-      <defs>
-        <linearGradient id="g1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#a855f7"/>
-          <stop offset="100%" stop-color="#ec4899"/>
-        </linearGradient>
-      </defs>
-    </svg>
+<!-- SPLASH — single screen covering loading + start, hides the browser zoom underneath -->
+<div id="splash">
+  <!-- Loading state -->
+  <div id="splash-loading">
+    <div id="splash-logo">FaceLink</div>
+    <div id="splash-spinner"></div>
+    <div id="bar-wrap"><div id="bar"></div></div>
+    <div id="splash-status">Loading AI model…</div>
   </div>
-  <h1>What does your face say about your digital life?</h1>
-  <p class="subtitle">Point your camera at someone and discover their digital footprint in seconds. Tap any icon to explore.</p>
-  <button id="start-btn" onclick="startCamera()">✦ Scan a Face</button>
+  <!-- Ready state (shown after model loads) -->
+  <div id="splash-ready">
+    <div class="hero-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="19" r="9" stroke="url(#g1)" stroke-width="2.5"/>
+        <path d="M9 40c0-8.3 6.7-15 15-15s15 6.7 15 15" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="24" cy="19" r="3.5" fill="url(#g1)" opacity="0.7"/>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#a855f7"/>
+            <stop offset="100%" stop-color="#ec4899"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <h1>What does your face say about your digital life?</h1>
+    <p class="subtitle">Point your camera at someone and discover their digital footprint in seconds. Tap any icon to explore.</p>
+    <button id="start-btn" onclick="startCamera()">✦ Scan a Face</button>
+  </div>
 </div>
 
 <!-- CAMERA -->
@@ -592,31 +625,40 @@ const MODEL_BASE = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/mod
 
 async function loadModels() {
   const bar = document.getElementById('bar');
-  const txt = document.getElementById('load-txt');
+  const status = document.getElementById('splash-status');
+  const cached = localStorage.getItem('facelink_model_cached') === '1';
+
+  // If previously cached, hide spinner immediately and show ready state
+  if (cached) {
+    document.getElementById('splash-loading').style.display = 'none';
+    document.getElementById('splash-ready').style.display = 'flex';
+  }
+
   try {
-    txt.textContent = 'Loading face detector…';
-    bar.style.width = '30%';
+    if (!cached) { status.textContent = 'Loading face detector…'; bar.style.width = '30%'; }
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_BASE);
-    bar.style.width = '100%';
-    txt.textContent = 'Ready ✓';
+    if (!cached) { bar.style.width = '100%'; status.textContent = 'Ready ✓'; }
     modelsReady = true;
+    localStorage.setItem('facelink_model_cached', '1');
   } catch(e) {
-    txt.textContent = 'Retrying…';
+    if (!cached) status.textContent = 'Retrying…';
     try {
       await faceapi.nets.tinyFaceDetector.loadFromUri(
         'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
       );
-      bar.style.width = '100%';
-      txt.textContent = 'Ready ✓';
       modelsReady = true;
+      localStorage.setItem('facelink_model_cached', '1');
     } catch(e2) {
-      txt.textContent = 'Failed to load — check connection';
+      if (!cached) status.textContent = 'Failed to load — check connection';
       console.error(e2);
     }
   }
-  await new Promise(r => setTimeout(r, 500));
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('start-screen').style.display = 'flex';
+
+  if (!cached) {
+    await new Promise(r => setTimeout(r, 400));
+    document.getElementById('splash-loading').style.display = 'none';
+    document.getElementById('splash-ready').style.display = 'flex';
+  }
 }
 
 (function waitForFaceApi() {
@@ -628,7 +670,10 @@ async function loadModels() {
 let currentStream = null;
 
 async function startCamera() {
-  document.getElementById('start-screen').style.display = 'none';
+  // Fade out splash, then remove it
+  const splash = document.getElementById('splash');
+  splash.classList.add('fade-out');
+  setTimeout(() => { splash.style.display = 'none'; }, 400);
   document.getElementById('camera-wrap').style.display = 'block';
   document.getElementById('header').style.display = 'flex';
 
